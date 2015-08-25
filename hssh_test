@@ -1,0 +1,95 @@
+#!/bin/bash  
+
+TO_CLEAN=
+trap 'rm -rf $TO_CLEAN' EXIT
+
+test_csv_to_ssh_config()
+{
+	local input=$(mktemp)
+	local expected_result=$(mktemp)
+	local result=$(mktemp)
+	TO_CLEAN="$TO_CLEAN $input $expected_result $result"
+	cat >$input <<-EOF 
+	uat;host_uat
+	dev test;host_dev
+	EOF
+
+	cat >$expected_result <<-EOF
+
+	Host uat
+	HostName host_uat_full
+
+	Host dev test
+	HostName host_dev_full
+	EOF
+
+	QUALIFIED_NAME=_full
+	cat $input        |
+	csv_to_ssh_config > $result   
+
+	diff -B $expected_result $result
+
+}
+
+test_switch_env()
+{
+	SSH_CONF=$(mktemp -d)
+	touch $SSH_CONF/config_uat
+	touch $SSH_CONF/config
+	TO_CLEAN="$TO_CLEAN $SSH_CONF"
+
+	switch_env uat
+
+	test -L $SSH_CONF/config
+	test -f $SSH_CONF/config.$(date +%a%b%Y_%H)*.bck
+}
+
+test_print()
+{
+	local expected_result=$(mktemp)
+	local result=$(mktemp)
+	TO_CLEAN="$TO_CLEAN $expected_result $result"
+
+	cat <<-EOF | print_ssh_config > $result
+
+	Host uat
+	HostName host_uat_full
+
+	Host dev test
+	HostName host_dev_full
+	EOF
+
+	cat > $expected_result <<-EOF
+	host_uat_full                 uat            
+	host_dev_full                 dev test	
+	EOF
+
+	diff -b $expected_result $result
+}
+
+test_list_env()
+{
+	SSH_CONF=$(mktemp -d)
+	local expected_result=$(mktemp)
+	local result=$(mktemp)
+	TO_CLEAN="$TO_CLEAN $expected_result $result $SSH_CONF"
+
+	touch $SSH_CONF/config
+	touch $SSH_CONF/config_dev
+	touch $SSH_CONF/config_uat
+
+	cat > $expected_result <<-EOF
+	uat
+	dev
+	EOF
+
+	list_env > $result 
+
+	diff $expected_result $result 
+}
+
+
+test_csv_to_ssh_config || log fail to parse csv
+test_switch_env        || log fail to switch env 
+test_print             || log fail to print env
+test_list_env          || log fail to list  env
