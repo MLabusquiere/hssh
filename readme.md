@@ -11,7 +11,7 @@ using command line.
 - Print a ssh config file in a human readable format 
 
 ##Usage 
-
+```
 ./hssh print (<env>)
 ./hssh switch <env>
 ./hssh parse <env_name> <file|-> <suffix_QUALIFIED_NAME> 
@@ -26,6 +26,7 @@ parse  : will parse the csv and create a new
 	 -u : add to all Host a default username
 	 -q : add at the arg at the end of the hostname
 csv format : aliases;hostname;username
+```
 
 ##Dev
 
